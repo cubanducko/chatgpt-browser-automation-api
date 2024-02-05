@@ -1,0 +1,14 @@
+{
+    "extends": "@tsconfig/node20/tsconfig.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "lib": ["es2020", "dom"]
+    },
+    "ts-node": {
+        "transpileOnly": true,
+        "files": true,
+    },
+    "include": [
+        "src/**/*.ts"
+    ]
+}
