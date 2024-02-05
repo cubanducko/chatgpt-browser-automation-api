@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { getDirname } from './paths';
+import { getDirname, getPlaywrightCacheFolder } from './paths';
 import { getRealChromium } from './real-browser';
 
 // This is ultra-hacky
@@ -26,10 +26,13 @@ export async function recordAuth() {
   const authTokens = await context.storageState();
 
   // Save storage to file
-  const __dirname = getDirname();
-  const filePath = path.join(__dirname, '../../auth/storage.json');
+  const filePath = getAuthPath();
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(authTokens));
 
   await browser.close();
+}
+
+export function getAuthPath() {
+  return path.join(getPlaywrightCacheFolder(), '/auth/storage.json');
 }

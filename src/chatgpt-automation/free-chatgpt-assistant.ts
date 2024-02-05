@@ -1,10 +1,12 @@
 import { getRealChromium } from './real-browser';
-import { Page } from 'playwright';
-import path from 'path';
+import { ElementHandle, Page } from 'playwright';
 import fs from 'fs';
+import path from 'path';
+import { getAuthPath } from './auth-assistant';
+import { getPlaywrightCacheFolder } from './paths';
 
 const chatGPTUrl = 'https://chat.openai.com/';
-const defaultAuthPath = path.join(__dirname, '../../auth/storage.json');
+const defaultAuthPath = getAuthPath();
 
 export enum ChatGPTModels {
   GPT4 = 'gpt-4',
@@ -20,7 +22,7 @@ export class FreeChatGPTAssistant {
     const authPathExists = fs.existsSync(authPath);
     if (!authPathExists) {
       throw new Error(
-        `Auth context is not provided, please execute "npm run chatgpt-auth" and log in`,
+        `Auth context is not provided, please login with the /login endpoint`,
       );
     }
     this.authContext = JSON.parse(
@@ -32,13 +34,14 @@ export class FreeChatGPTAssistant {
     const page = await this.getChatGPTPage(url);
 
     await this.fillPromptInput(page, prompt);
-    const html = await this.getLastMessageHTML(page);
+    const textContent = await this.getLastMessageHTML(page);
+    const assets = await this.getAssets(page);
 
     await page.close();
 
     return {
-      text: html,
-      assets: [],
+      text: textContent,
+      assets,
     };
   }
 
@@ -55,6 +58,21 @@ export class FreeChatGPTAssistant {
     const page = await context.newPage();
     await page.goto(finalUrl);
     await page.waitForSelector('id=prompt-textarea');
+
+    // Wait until the text "ChatGPT" is visible
+    const title = await page.waitForSelector(
+      'div[type=button] >> text=ChatGPT',
+    );
+    const titleContent = await title.textContent();
+
+    // For some reason sometimes the model is not selected, even if included in the url
+    if (this.model === ChatGPTModels.GPT4 && !titleContent?.includes('4')) {
+      await title.click();
+      const gpt4Option = page.getByText('GPT-4');
+      gpt4Option.click();
+      await page.waitForSelector('id=prompt-textarea');
+    }
+
     return page;
   }
 
@@ -86,5 +104,52 @@ export class FreeChatGPTAssistant {
     const lastMessage = messages[messages.length - 1];
     const html = await lastMessage.innerText();
     return html;
+  }
+
+  // TODO: Add snippets of code as an asset
+  // Support other types of assets
+  async getAssets(page: Page) {
+    // Get available images in base64
+    // Images are a bit weird to access, for now we use this neat trick
+    const messages = await page.$$('[data-testid^="conversation-turn-"]');
+    if (messages.length === 0) {
+      throw new Error('No messages found');
+    }
+
+    const lastMessage = messages[messages.length - 1];
+
+    const base64 = await this.downloadImageIfAvailable(page, lastMessage);
+
+    return {
+      image: base64,
+    };
+  }
+
+  async downloadImageIfAvailable(
+    page: Page,
+    lastMessage: ElementHandle<HTMLElement | SVGElement>,
+  ) {
+    const image = await lastMessage.$('button img');
+    if (!image) {
+      return;
+    }
+    await image?.hover();
+
+    // This is the download button
+    const downloadButton = await lastMessage.$('button button');
+    if (!downloadButton) {
+      throw new Error('Download button unavailable');
+    }
+
+    const downloadPromise = page.waitForEvent('download');
+    await downloadButton.click();
+    const download = await downloadPromise;
+
+    // Wait for the download process to complete and save the downloaded file somewhere.
+    const cachedAssestsPath = path.join(getPlaywrightCacheFolder(), 'assests');
+    const filePath = path.join(cachedAssestsPath, download.suggestedFilename());
+    await download.saveAs(filePath);
+
+    return fs.readFileSync(filePath).toString('base64');
   }
 }
