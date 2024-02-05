@@ -150,6 +150,7 @@ export class FreeChatGPTAssistant {
     const filePath = path.join(cachedAssestsPath, download.suggestedFilename());
     await download.saveAs(filePath);
 
-    return fs.readFileSync(filePath).toString('base64');
+    const base64 = fs.readFileSync(filePath).toString('base64');
+    return `data:image/webp;base64,${base64}`;
   }
 }
