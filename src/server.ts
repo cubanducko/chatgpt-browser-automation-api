@@ -26,7 +26,7 @@ const sendMessageSchema: RouteShorthandOptions = {
         message: { type: 'string' },
         model: { type: 'string' },
       },
-      required: ['message', 'model'],
+      required: ['message'],
     },
   },
 };
