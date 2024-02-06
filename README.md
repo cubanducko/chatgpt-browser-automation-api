@@ -1,4 +1,4 @@
-# 🚀 chatgpt-browser-automation-api
+# 🚀 ChatGPT browser automation API
 
 This project utilizes Playwright to interact with the ChatGPT web application as an API. It is primarily designed for local usage and testing purposes. For more robust and production-ready implementations, we recommend utilizing the official ChatGPT API provided by OpenAI. You can find more information about the official API in the [OpenAI Blog](https://openai.com/blog/introducing-chatgpt-and-whisper-apis).
 
