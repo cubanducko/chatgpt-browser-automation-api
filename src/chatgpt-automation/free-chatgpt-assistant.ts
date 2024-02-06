@@ -50,7 +50,7 @@ export class FreeChatGPTAssistant {
       this.model === ChatGPTModels.GPT4 ? `${url}?model=gpt-4` : url;
     const chromium = getRealChromium();
     const browser = await chromium.launch({
-      headless: false,
+      headless: true,
     });
     const context = await browser.newContext({
       storageState: this.authContext,

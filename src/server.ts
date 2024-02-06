@@ -9,7 +9,7 @@ export const server = Fastify({
   logger: true,
 });
 
-server.get('/login', async function handler(request, reply) {
+server.get('/local-login', async function handler(request, reply) {
   recordAuth();
 });
 
